@@ -9,9 +9,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -20,6 +24,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.ListView;
 
 import com.airbnb.lottie.LottieAnimationView;
+import com.miguelcatalan.materialsearchview.MaterialSearchView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -54,6 +59,8 @@ public class CityFragment extends Fragment {
     @BindView(R.id.music_list)
     ListView lv;
 
+    MaterialSearchView materialSearchView;
+
     private String mNameyet;
     private Activity mActivity;
     private Handler mHandler;
@@ -82,11 +89,50 @@ public class CityFragment extends Fragment {
         mToken = sharedPreferences.getString(USER_TOKEN, null);
 
         mHandler = new Handler(Looper.getMainLooper());
-        cityname.setThreshold(1);
 
         fetchCitiesList();
 
         return view;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        getActivity().getMenuInflater().inflate(R.menu.search_menu, menu);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        MenuItem item = menu.findItem(R.id.action_search);
+        if (item != null) {
+            materialSearchView = (MaterialSearchView) item.getActionView();
+        }
+
+        if (materialSearchView != null ) {
+            materialSearchView.setOnQueryTextListener(new MaterialSearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    mNameyet = newText;
+                    if (!mNameyet.contains(" ") && mNameyet.length() % 3 == 0) {
+                        cityAutoComplete();
+                    }
+                    return true;
+                }
+            });
+        }
+
     }
 
     @OnTextChanged(R.id.cityname)
@@ -146,9 +192,9 @@ public class CityFragment extends Fragment {
                                 new ArrayAdapter<>(
                                         mActivity.getApplicationContext(), R.layout.spinner_layout, citynames);
                         dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        cityname.setThreshold(1);
-                        cityname.setAdapter(dataAdapter);
-                        cityname.setOnItemClickListener((arg0, arg1, arg2, arg3) -> {
+//                        cityname.setThreshold(1);
+                        materialSearchView.setAdapter(dataAdapter);
+                        materialSearchView.setOnItemClickListener((arg0, arg1, arg2, arg3) -> {
                             Intent intent = FinalCityInfoActivity.getStartIntent(mActivity, cities.get(arg2));
                             startActivity(intent);
                         });
